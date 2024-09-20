@@ -2,8 +2,8 @@ local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local Camera = game.Workspace.CurrentCamera
 
--- Cor para o outline verde quando o jogador está visível
-local visibleColor = Color3.fromRGB(0, 255, 0)
+-- Cor para o outline vermelho quando o jogador está visível
+local visibleColor = Color3.fromRGB(255, 0, 0)
 -- Cor padrão quando o jogador está atrás de uma parede
 local normalColor = Color3.fromRGB(255, 255, 255)
 
@@ -41,7 +41,7 @@ end
 local function CreateESP(player)
     local BillboardGui = Instance.new("BillboardGui")
     BillboardGui.AlwaysOnTop = true
-    BillboardGui.Size = UDim2.new(0, 100, 0, 50) -- Tamanho fixo do ESP
+    BillboardGui.Size = UDim2.new(0, 50, 0, 25) -- Tamanho reduzido do ESP
     BillboardGui.Adornee = player.Character:FindFirstChild("Head")
     BillboardGui.Parent = player.Character.Head
 
