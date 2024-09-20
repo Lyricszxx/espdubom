@@ -61,7 +61,8 @@ local function CreateESP(player)
     Outline.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
 
     -- Atualiza a cor do outline com base na visibilidade
-    RunService.RenderStepped:Connect(function()
+    local updateConnection
+    updateConnection = RunService.RenderStepped:Connect(function()
         if IsAlive(player) then
             if IsVisible(player) then
                 Outline.OutlineColor = visibleColor
@@ -69,31 +70,35 @@ local function CreateESP(player)
                 Outline.OutlineColor = normalColor
             end
         else
-            -- Remove o ESP se o jogador morrer
-            if BillboardGui then
-                BillboardGui:Destroy()
-            end
-            if Outline then
-                Outline:Destroy()
+            -- Verifica se o jogador morreu e desconecta o evento
+            if player.Character:FindFirstChild("Humanoid").Health <= 0 then
+                updateConnection:Disconnect() -- Desconecta quando o jogador morre
             end
         end
     end)
 end
 
--- Adiciona ESP para todos os jogadores no jogo
-for _, player in pairs(Players:GetPlayers()) do
-    if player ~= Players.LocalPlayer then
-        if player.Character and player.Character:FindFirstChild("Head") then
-            CreateESP(player)
-        end
+-- Função para configurar o ESP e outline para um jogador quando ele respawnar
+local function ApplyESP(player)
+    if player.Character and player.Character:FindFirstChild("Head") then
+        CreateESP(player)
     end
-end
-
--- Atualiza o ESP quando novos jogadores entram no jogo
-Players.PlayerAdded:Connect(function(player)
+    -- Reaplica o ESP sempre que o jogador reaparecer
     player.CharacterAdded:Connect(function(character)
         if character:FindFirstChild("Head") then
             CreateESP(player)
         end
     end)
+end
+
+-- Aplica o ESP para todos os jogadores existentes
+for _, player in pairs(Players:GetPlayers()) do
+    if player ~= Players.LocalPlayer then
+        ApplyESP(player)
+    end
+end
+
+-- Aplica o ESP para novos jogadores que entrarem no jogo
+Players.PlayerAdded:Connect(function(player)
+    ApplyESP(player)
 end)
