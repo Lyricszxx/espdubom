@@ -2,17 +2,13 @@ local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local Camera = game.Workspace.CurrentCamera
 
--- Cor para o outline vermelho quando o jogador está visível
 local visibleColor = Color3.fromRGB(255, 0, 0)
--- Cor padrão quando o jogador está atrás de uma parede
 local normalColor = Color3.fromRGB(255, 255, 255)
 
--- Função para verificar se o jogador está vivo
 local function IsAlive(player)
     return player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0
 end
 
--- Função para verificar a linha de visão (raycast)
 local function IsVisible(player)
     local head = player.Character:FindFirstChild("Head")
     if head then
@@ -25,23 +21,17 @@ local function IsVisible(player)
 
         local raycastResult = game.Workspace:Raycast(origin, direction, raycastParams)
         if raycastResult then
-            if raycastResult.Instance:IsDescendantOf(player.Character) then
-                return true
-            else
-                return false
-            end
-        else
-            return true
+            return not raycastResult.Instance:IsDescendantOf(player.Character)
         end
+        return true
     end
     return false
 end
 
--- Função para desenhar ESP e manter o tamanho fixo
 local function CreateESP(player)
     local BillboardGui = Instance.new("BillboardGui")
     BillboardGui.AlwaysOnTop = true
-    BillboardGui.Size = UDim2.new(0, 50, 0, 25) -- Tamanho reduzido do ESP
+    BillboardGui.Size = UDim2.new(0, 50, 0, 25)
     BillboardGui.Adornee = player.Character:FindFirstChild("Head")
     BillboardGui.Parent = player.Character.Head
 
@@ -60,9 +50,7 @@ local function CreateESP(player)
     Outline.OutlineColor = normalColor
     Outline.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
 
-    -- Atualiza a cor do outline com base na visibilidade
-    local updateConnection
-    updateConnection = RunService.RenderStepped:Connect(function()
+    while true do
         if IsAlive(player) then
             if IsVisible(player) then
                 Outline.OutlineColor = visibleColor
@@ -70,35 +58,23 @@ local function CreateESP(player)
                 Outline.OutlineColor = normalColor
             end
         else
-            -- Verifica se o jogador morreu e desconecta o evento
-            if player.Character:FindFirstChild("Humanoid").Health <= 0 then
-                updateConnection:Disconnect() -- Desconecta quando o jogador morre
-            end
+            BillboardGui:Destroy()
+            Outline:Destroy()
+            break
         end
-    end)
+        RunService.RenderStepped:Wait()
+    end
 end
 
--- Função para configurar o ESP e outline para um jogador quando ele respawnar
-local function ApplyESP(player)
-    if player.Character and player.Character:FindFirstChild("Head") then
+for _, player in pairs(Players:GetPlayers()) do
+    if player ~= Players.LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
         CreateESP(player)
     end
-    -- Reaplica o ESP sempre que o jogador reaparecer
-    player.CharacterAdded:Connect(function(character)
-        if character:FindFirstChild("Head") then
-            CreateESP(player)
-        end
-    end)
 end
 
--- Aplica o ESP para todos os jogadores existentes
-for _, player in pairs(Players:GetPlayers()) do
-    if player ~= Players.LocalPlayer then
-        ApplyESP(player)
-    end
-end
-
--- Aplica o ESP para novos jogadores que entrarem no jogo
 Players.PlayerAdded:Connect(function(player)
-    ApplyESP(player)
+    player.CharacterAdded:Connect(function(character)
+        character:WaitForChild("Head")
+        CreateESP(player)
+    end)
 end)
