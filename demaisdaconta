@@ -1,86 +1,99 @@
-local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local LocalPlayer = Players.LocalPlayer
+local Players = game:GetService("Players")
 local Camera = game.Workspace.CurrentCamera
 
--- Função para criar um label para mostrar o nome dos jogadores
-local function CreateESPLabel(player)
-    local billboardGui = Instance.new("BillboardGui")
-    billboardGui.Adornee = player.Character:FindFirstChild("Head")
-    billboardGui.ExtentsOffset = Vector3.new(0, 2, 0) -- Ajuste a altura da label
-    billboardGui.Size = UDim2.new(0, 100, 0, 30) -- Tamanho menor da label
-    billboardGui.AlwaysOnTop = true
-    
-    local textLabel = Instance.new("TextLabel")
-    textLabel.Size = UDim2.new(1, 0, 1, 0)
-    textLabel.Text = player.Name
-    textLabel.BackgroundTransparency = 1
-    textLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
-    textLabel.TextStrokeTransparency = 0.5
-    textLabel.Font = Enum.Font.SourceSansBold
-    textLabel.TextScaled = true
-    textLabel.Parent = billboardGui
-
-    billboardGui.Parent = player.Character.Head
-end
-
--- Função para criar um highlight (contorno) no personagem
-local function CreateHighlight(player)
-    local highlight = Instance.new("Highlight")
-    highlight.Parent = player.Character
-    highlight.FillColor = Color3.fromRGB(255, 0, 0) -- Cor de preenchimento
-    highlight.OutlineColor = Color3.fromRGB(0, 0, 0) -- Cor do contorno
-    highlight.OutlineTransparency = 0 -- Transparência do contorno
-    highlight.Enabled = true
-end
-
--- Função para remover a label e o highlight quando o jogador morre ou sai do jogo
-local function RemoveESPLabel(player)
-    local head = player.Character:FindFirstChild("Head")
-    if head and head:FindFirstChildOfClass("BillboardGui") then
-        head:FindFirstChildOfClass("BillboardGui"):Destroy()
-    end
-    if player.Character:FindFirstChildOfClass("Highlight") then
-        player.Character:FindFirstChildOfClass("Highlight"):Destroy()
-    end
-end
+-- Cor para o outline verde quando o jogador está visível
+local visibleColor = Color3.fromRGB(0, 255, 0)
+-- Cor padrão quando o jogador está atrás de uma parede
+local normalColor = Color3.fromRGB(255, 255, 255)
 
 -- Função para verificar se o jogador está vivo
 local function IsAlive(player)
     return player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0
 end
 
--- Adiciona ESP para jogadores que entram no jogo
-Players.PlayerAdded:Connect(function(player)
-    player.CharacterAdded:Connect(function(character)
+-- Função para verificar a linha de visão (raycast)
+local function IsVisible(player)
+    local head = player.Character:FindFirstChild("Head")
+    if head then
+        local origin = Camera.CFrame.Position
+        local direction = (head.Position - origin).unit * (head.Position - origin).Magnitude
+
+        local raycastParams = RaycastParams.new()
+        raycastParams.FilterDescendantsInstances = {Players.LocalPlayer.Character}
+        raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+
+        local raycastResult = game.Workspace:Raycast(origin, direction, raycastParams)
+        if raycastResult then
+            if raycastResult.Instance:IsDescendantOf(player.Character) then
+                return true
+            else
+                return false
+            end
+        else
+            return true
+        end
+    end
+    return false
+end
+
+-- Função para desenhar ESP e manter o tamanho fixo
+local function CreateESP(player)
+    local BillboardGui = Instance.new("BillboardGui")
+    BillboardGui.AlwaysOnTop = true
+    BillboardGui.Size = UDim2.new(0, 100, 0, 50) -- Tamanho fixo do ESP
+    BillboardGui.Adornee = player.Character:FindFirstChild("Head")
+    BillboardGui.Parent = player.Character.Head
+
+    local NameLabel = Instance.new("TextLabel")
+    NameLabel.Size = UDim2.new(1, 0, 1, 0)
+    NameLabel.BackgroundTransparency = 1
+    NameLabel.Text = player.Name
+    NameLabel.TextColor3 = normalColor
+    NameLabel.TextScaled = true
+    NameLabel.Parent = BillboardGui
+
+    local Outline = Instance.new("Highlight")
+    Outline.Adornee = player.Character
+    Outline.Parent = player.Character
+    Outline.FillTransparency = 1
+    Outline.OutlineColor = normalColor
+    Outline.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+
+    -- Atualiza a cor do outline com base na visibilidade
+    RunService.RenderStepped:Connect(function()
         if IsAlive(player) then
-            CreateESPLabel(player)
-            CreateHighlight(player)
+            if IsVisible(player) then
+                Outline.OutlineColor = visibleColor
+            else
+                Outline.OutlineColor = normalColor
+            end
+        else
+            -- Remove o ESP se o jogador morrer
+            if BillboardGui then
+                BillboardGui:Destroy()
+            end
+            if Outline then
+                Outline:Destroy()
+            end
         end
     end)
-end)
+end
 
--- Adiciona ESP para todos os jogadores já presentes no jogo
-for _, player in ipairs(Players:GetPlayers()) do
-    if player ~= LocalPlayer and IsAlive(player) then
-        CreateESPLabel(player)
-        CreateHighlight(player)
+-- Adiciona ESP para todos os jogadores no jogo
+for _, player in pairs(Players:GetPlayers()) do
+    if player ~= Players.LocalPlayer then
+        if player.Character and player.Character:FindFirstChild("Head") then
+            CreateESP(player)
+        end
     end
 end
 
--- Remove ESP para jogadores que saem do jogo
-Players.PlayerRemoving:Connect(function(player)
-    RemoveESPLabel(player)
-end)
-
--- Atualiza o ESP constantemente para garantir que funcione mesmo com respawns
-RunService.RenderStepped:Connect(function()
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and IsAlive(player) then
-            if not player.Character.Head:FindFirstChildOfClass("BillboardGui") then
-                CreateESPLabel(player)
-                CreateHighlight(player)
-            end
+-- Atualiza o ESP quando novos jogadores entram no jogo
+Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function(character)
+        if character:FindFirstChild("Head") then
+            CreateESP(player)
         end
-    end
+    end)
 end)
