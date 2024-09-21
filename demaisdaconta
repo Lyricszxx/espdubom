@@ -4,7 +4,7 @@ local Camera = game.Workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
 -- Configurações da assistência de mira
-local aimSmoothness = 0.3 -- Quão suave a mira deve ser (menor é mais rápido)
+local aimSmoothness = 0.1 -- Quão suave a mira deve ser (menor é mais rápido)
 local aimRadius = 40 -- Distância da câmera para considerar um alvo para o aim assist
 local aimAssistEnabled = true -- Sempre ativado
 
