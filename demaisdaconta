@@ -1,64 +1,87 @@
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local Camera = game.Workspace.CurrentCamera
-local LocalPlayer = Players.LocalPlayer
 
--- Configurações da assistência de mira
-local aimSmoothness = 0.1 -- Quão suave a mira deve ser (menor é mais rápido)
-local aimRadius = 40 -- Distância da câmera para considerar um alvo para o aim assist
-local aimAssistEnabled = true -- Sempre ativado
+local visibleColor = Color3.fromRGB(255, 0, 0)
+local normalColor = Color3.fromRGB(255, 255, 255)
 
--- Função para verificar se o jogador está vivo
 local function IsAlive(player)
     return player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0
 end
 
--- Função para obter o alvo mais próximo da mira do jogador
-local function GetClosestPlayerToCrosshair()
-    local closestPlayer = nil
-    local shortestDistance = aimRadius
+local function IsVisible(player)
+    local head = player.Character:FindFirstChild("Head")
+    if head then
+        local origin = Camera.CFrame.Position
+        local direction = (head.Position - origin).unit * (head.Position - origin).Magnitude
 
+        local raycastParams = RaycastParams.new()
+        raycastParams.FilterDescendantsInstances = {Players.LocalPlayer.Character}
+        raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+
+        local raycastResult = game.Workspace:Raycast(origin, direction, raycastParams)
+        if raycastResult then
+            return not raycastResult.Instance:IsDescendantOf(player.Character)
+        else
+            return true
+        end
+    end
+    return false
+end
+
+local function CreateESP(player)
+    local BillboardGui = Instance.new("BillboardGui")
+    BillboardGui.AlwaysOnTop = true
+    BillboardGui.Size = UDim2.new(0, 50, 0, 25)
+    BillboardGui.Adornee = player.Character:FindFirstChild("Head")
+    BillboardGui.Parent = player.Character.Head
+
+    local NameLabel = Instance.new("TextLabel")
+    NameLabel.Size = UDim2.new(1, 0, 1, 0)
+    NameLabel.BackgroundTransparency = 1
+    NameLabel.Text = player.Name
+    NameLabel.TextColor3 = normalColor
+    NameLabel.TextScaled = true
+    NameLabel.Parent = BillboardGui
+
+    local Outline = Instance.new("Highlight")
+    Outline.Adornee = player.Character
+    Outline.Parent = player.Character
+    Outline.FillTransparency = 1
+    Outline.OutlineColor = normalColor
+    Outline.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+
+    return BillboardGui, Outline
+end
+
+while true do
     for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and IsAlive(player) then
-            local head = player.Character:FindFirstChild("Head")
-            if head then
-                local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
-                if onScreen then
-                    -- Para mobile, usamos o centro da tela como referência
-                    local screenCenter = Camera.ViewportSize / 2
-                    local distance = (Vector2.new(screenPos.X, screenPos.Y) - screenCenter).Magnitude
+        if player ~= Players.LocalPlayer then
+            if player.Character and player.Character:FindFirstChild("Head") then
+                local BillboardGui, Outline = CreateESP(player)
 
-                    if distance < shortestDistance then
-                        closestPlayer = player
-                        shortestDistance = distance
+                RunService.RenderStepped:Connect(function()
+                    if IsAlive(player) then
+                        if IsVisible(player) then
+                            Outline.OutlineColor = visibleColor
+                        else
+                            Outline.OutlineColor = normalColor
+                        end
+                    else
+                        BillboardGui:Destroy()
+                        Outline:Destroy()
                     end
-                end
+                end)
             end
         end
     end
-
-    return closestPlayer
+    wait(1) -- Intervalo para evitar sobrecarga do loop
 end
 
--- Função para ajustar a mira suavemente para a cabeça do alvo
-local function AimAtTarget(target)
-    if target and target.Character and target.Character:FindFirstChild("Head") then
-        local headPosition = target.Character.Head.Position
-        local cameraPosition = Camera.CFrame.Position
-
-        -- Calcular a direção da cabeça do inimigo
-        local directionToHead = (headPosition - cameraPosition).unit
-
-        -- Calcular a nova CFrame da câmera, suavizando o movimento
-        local targetCFrame = CFrame.new(cameraPosition, cameraPosition + directionToHead)
-        Camera.CFrame = Camera.CFrame:Lerp(targetCFrame, aimSmoothness)
-    end
-end
-
--- Verifica continuamente a posição da câmera e ajusta a mira para mobile
-RunService.RenderStepped:Connect(function()
-    if aimAssistEnabled then
-        local closestPlayer = GetClosestPlayerToCrosshair()
-        AimAtTarget(closestPlayer)
-    end
+Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function(character)
+        if character:FindFirstChild("Head") then
+            CreateESP(player)
+        end
+    end)
 end)
