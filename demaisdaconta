@@ -22,8 +22,9 @@ local function IsVisible(player)
         local raycastResult = game.Workspace:Raycast(origin, direction, raycastParams)
         if raycastResult then
             return not raycastResult.Instance:IsDescendantOf(player.Character)
+        else
+            return true
         end
-        return true
     end
     return false
 end
@@ -50,31 +51,37 @@ local function CreateESP(player)
     Outline.OutlineColor = normalColor
     Outline.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
 
-    while true do
-        if IsAlive(player) then
-            if IsVisible(player) then
-                Outline.OutlineColor = visibleColor
-            else
-                Outline.OutlineColor = normalColor
-            end
-        else
-            BillboardGui:Destroy()
-            Outline:Destroy()
-            break
-        end
-        RunService.RenderStepped:Wait()
-    end
+    return BillboardGui, Outline
 end
 
-for _, player in pairs(Players:GetPlayers()) do
-    if player ~= Players.LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
-        CreateESP(player)
+while true do
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= Players.LocalPlayer then
+            if player.Character and player.Character:FindFirstChild("Head") then
+                local BillboardGui, Outline = CreateESP(player)
+
+                RunService.RenderStepped:Connect(function()
+                    if IsAlive(player) then
+                        if IsVisible(player) then
+                            Outline.OutlineColor = visibleColor
+                        else
+                            Outline.OutlineColor = normalColor
+                        end
+                    else
+                        BillboardGui:Destroy()
+                        Outline:Destroy()
+                    end
+                end)
+            end
+        end
     end
+    wait(1) -- Intervalo para evitar sobrecarga do loop
 end
 
 Players.PlayerAdded:Connect(function(player)
     player.CharacterAdded:Connect(function(character)
-        character:WaitForChild("Head")
-        CreateESP(player)
+        if character:FindFirstChild("Head") then
+            CreateESP(player)
+        end
     end)
 end)
