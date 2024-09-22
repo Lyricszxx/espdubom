@@ -20,11 +20,7 @@ local function IsVisible(player)
         raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
 
         local raycastResult = game.Workspace:Raycast(origin, direction, raycastParams)
-        if raycastResult then
-            return not raycastResult.Instance:IsDescendantOf(player.Character)
-        else
-            return true
-        end
+        return not raycastResult or not raycastResult.Instance:IsDescendantOf(player.Character)
     end
     return false
 end
@@ -32,17 +28,24 @@ end
 local function CreateESP(player)
     local BillboardGui = Instance.new("BillboardGui")
     BillboardGui.AlwaysOnTop = true
-    BillboardGui.Size = UDim2.new(0, 50, 0, 25)
+    BillboardGui.Size = UDim2.new(0, 100, 0, 50)
     BillboardGui.Adornee = player.Character:FindFirstChild("Head")
     BillboardGui.Parent = player.Character.Head
 
     local NameLabel = Instance.new("TextLabel")
-    NameLabel.Size = UDim2.new(1, 0, 1, 0)
+    NameLabel.Size = UDim2.new(1, 0, 0.5, 0)
     NameLabel.BackgroundTransparency = 1
-    NameLabel.Text = player.Name
     NameLabel.TextColor3 = normalColor
     NameLabel.TextScaled = true
     NameLabel.Parent = BillboardGui
+
+    local HPLabel = Instance.new("TextLabel")
+    HPLabel.Size = UDim2.new(1, 0, 0.5, 0)
+    HPLabel.Position = UDim2.new(0, 0, 0.5, 0)
+    HPLabel.BackgroundTransparency = 1
+    HPLabel.TextColor3 = normalColor
+    HPLabel.TextScaled = true
+    HPLabel.Parent = BillboardGui
 
     local Outline = Instance.new("Highlight")
     Outline.Adornee = player.Character
@@ -51,17 +54,21 @@ local function CreateESP(player)
     Outline.OutlineColor = normalColor
     Outline.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
 
-    return BillboardGui, Outline
+    return BillboardGui, Outline, NameLabel, HPLabel
 end
 
 while true do
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= Players.LocalPlayer then
             if player.Character and player.Character:FindFirstChild("Head") then
-                local BillboardGui, Outline = CreateESP(player)
+                local BillboardGui, Outline, NameLabel, HPLabel = CreateESP(player)
 
                 RunService.RenderStepped:Connect(function()
                     if IsAlive(player) then
+                        local humanoid = player.Character:FindFirstChild("Humanoid")
+                        NameLabel.Text = player.Name
+                        HPLabel.Text = "HP: " .. math.ceil(humanoid.Health)
+
                         if IsVisible(player) then
                             Outline.OutlineColor = visibleColor
                         else
