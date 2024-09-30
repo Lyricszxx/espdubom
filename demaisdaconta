@@ -3,7 +3,7 @@ local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
 local Camera = workspace.CurrentCamera
 
-local sensitivity = 0.01 -- AMUDA A SENSI AQ CALANGO
+local sensitivity = 0.001 -- AMUDA A SENSI AQ CALANGO
 local screenWidth = Camera.ViewportSize.X
 local screenHeight = Camera.ViewportSize.Y
 
