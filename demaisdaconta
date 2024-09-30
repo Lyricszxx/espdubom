@@ -1,11 +1,9 @@
--- CALMA GORDO VEI 
 local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
 local Camera = workspace.CurrentCamera
 
-local sensitivity = 0.001 -- AMUDA A SENSI AQ CALANGO
+local sensitivity = 0.001 -- Sensibilidade muito baixa
 local screenWidth = Camera.ViewportSize.X
-local screenHeight = Camera.ViewportSize.Y
 
 local function onTouchStarted(touch)
     local startPos = touch.Position
@@ -13,12 +11,10 @@ local function onTouchStarted(touch)
 
     local touchMovedConnection
     touchMovedConnection = UserInputService.TouchMoved:Connect(function(touchMove)
-        if touchMove == touch then
-            if touch.Position.X > screenWidth / 2 then
-                local delta = touchMove.Position - startPos
-                local newRotation = startRotation * CFrame.Angles(-delta.Y * sensitivity, -delta.X * sensitivity, 0)
-                Camera.CFrame = CFrame.new(Camera.CFrame.Position) * newRotation
-            end
+        if touchMove == touch and touch.Position.X > screenWidth / 2 then
+            local delta = touchMove.Position - startPos
+            local newRotation = startRotation * CFrame.Angles(0, -delta.X * sensitivity, 0)
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position) * newRotation
         end
     end)
 
@@ -30,30 +26,3 @@ local function onTouchStarted(touch)
 end
 
 UserInputService.TouchStarted:Connect(onTouchStarted)
-
-local function sendNotification(message)
-    if _G.SendNotifications then
-        -- ScreenGui
-        local screenGui = Instance.new("ScreenGui")
-        screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-        
-        -- TextLabel
-        local textLabel = Instance.new("TextLabel")
-        textLabel.Size = UDim2.new(0, 300, 0, 50) -- Tamanho mediano
-        textLabel.Position = UDim2.new(1, -310, 1, -60) -- Canto inferior direito
-        textLabel.AnchorPoint = Vector2.new(1, 1) -- Ancora no canto inferior direito
-        textLabel.BackgroundTransparency = 0.5 -- TransparÃªncia de fundo
-        textLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0) -- Cor de fundo preta
-        textLabel.TextColor3 = Color3.fromRGB(255, 255, 255) -- Cor do texto branca
-        textLabel.Font = Enum.Font.SourceSansBold -- Fonte do texto
-        textLabel.TextSize = 24 -- Tamanho do texto
-        textLabel.Text = message
-        textLabel.Parent = screenGui
-        
-      
-        wait(3)
-        screenGui:Destroy()
-    end
-end
-
-sendNotification("CALMA GORDO VEI")
