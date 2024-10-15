@@ -1,1 +1,41 @@
-loadstring(game:HttpGet("https://raw.githubusercontent.com/Lyricszxx/hub/refs/heads/main/kakkaa"))()
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+local function setChristRedeemer(character)
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        humanoid:SetAttribute("LoadAnimations", false)
+        for _, track in ipairs(humanoid:GetPlayingAnimationTracks()) do
+            track:Stop()
+        end
+
+        -- Posicionar os braços como o Cristo Redentor
+        local rightArm = character:FindFirstChild("Right Arm") or character:FindFirstChild("RightUpperArm")
+        local leftArm = character:FindFirstChild("Left Arm") or character:FindFirstChild("LeftUpperArm")
+        
+        if rightArm and leftArm then
+            rightArm.CFrame = CFrame.new(rightArm.Position) * CFrame.Angles(0, 0, math.rad(-90))
+            leftArm.CFrame = CFrame.new(leftArm.Position) * CFrame.Angles(0, 0, math.rad(90))
+        end
+    end
+end
+
+local function onCharacterAdded(player)
+    if player ~= LocalPlayer then
+        local function updateCharacter()
+            if player.Character then
+                setChristRedeemer(player.Character)
+            end
+        end
+
+        updateCharacter()
+        RunService.Heartbeat:Connect(updateCharacter)
+    end
+end
+
+for _, player in ipairs(Players:GetPlayers()) do
+    onCharacterAdded(player)
+end
+
+Players.PlayerAdded:Connect(onCharacterAdded)
